@@ -1,0 +1,481 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mölkky Game</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #e6f2ff;
+            color: #333;
+        }
+        h1 {
+            text-align: center;
+            color: #2c3e50;
+            font-size: 2.5em;
+            margin-bottom: 30px;
+        }
+        #game-setup, #game-board, #winner-screen {
+            background-color: white;
+            border-radius: 12px;
+            padding: 30px;
+            margin-bottom: 30px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        button {
+            background-color: #3498db;
+            border: none;
+            color: white;
+            padding: 12px 24px;
+            text-align: center;
+            text-decoration: none;
+            display: inline-block;
+            font-size: 16px;
+            margin: 4px 2px;
+            cursor: pointer;
+            border-radius: 6px;
+            transition: background-color 0.3s;
+            box-sizing: border-box;
+        }
+        button:hover {
+            background-color: #2980b9;
+        }
+        input[type="text"], input[type="number"] {
+            width: 100%;
+            padding: 12px;
+            margin: 8px 0;
+            box-sizing: border-box;
+            border: 2px solid #bdc3c7;
+            border-radius: 6px;
+            font-size: 16px;
+        }
+        #pins {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(70px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+            margin-bottom: 20px;
+        }
+        .pin {
+            width: 100%;
+            padding-top: 100%; /* Maintains square aspect ratio */
+            position: relative;
+            font-size: 24px;
+            font-weight: bold;
+            background-color: #ecf0f1;
+            border: 2px solid #bdc3c7;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+        }
+        .pin span {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+        }
+        .pin.selected {
+            background-color: #2ecc71;
+            color: white;
+        }
+        #player-scores {
+            display: flex;
+            justify-content: space-around;
+            margin-top: 30px;
+            flex-wrap: wrap;
+        }
+        .player-score {
+            text-align: center;
+            font-size: 20px;
+            font-weight: bold;
+            background-color: #f1c40f;
+            color: #34495e;
+            padding: 10px 20px;
+            border-radius: 6px;
+            margin: 10px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .misses {
+            color: #e74c3c;
+            font-size: 18px;
+            margin-top: 5px;
+        }
+        #current-player {
+            font-size: 24px;
+            font-weight: bold;
+            color: #e74c3c;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        #winner-screen {
+            text-align: center;
+            display: none;
+        }
+        #winner-message {
+            font-size: 36px;
+            color: #27ae60;
+            margin-bottom: 20px;
+        }
+        #download-results {
+            background-color: #27ae60;
+        }
+        #reset-game {
+            background-color: #e74c3c;
+        }
+        #undo-button {
+            background-color: #f39c12;
+        }
+        #player-order {
+            margin-top: 20px;
+        }
+        #player-order-list {
+            list-style-type: none;
+            padding: 0;
+        }
+        #player-order-list li {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        .order-button {
+            padding: 5px 10px;
+            font-size: 14px;
+        }
+        .eliminated {
+            text-decoration: line-through;
+            color: #7f8c8d;
+        }
+        #live-scoreboard {
+            margin-top: 30px;
+        }
+        .scoreboard-header {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 10px;
+            padding: 10px;
+            background-color: #bdc3c7;
+            border-radius: 6px;
+            font-weight: bold;
+            text-align: center;
+        }
+        .scoreboard-entry {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 10px;
+            padding: 10px;
+            background-color: #ecf0f1;
+            border-radius: 6px;
+            margin-bottom: 10px;
+            align-items: center;
+            text-align: center;
+        }
+        .arrow-up {
+            color: green;
+        }
+        .arrow-down {
+            color: red;
+        }
+    </style>
+</head>
+<body>
+    <h1>Mölkky Game</h1>
+    <div id="game-setup">
+        <h2>Game Setup</h2>
+        <input type="text" id="player-names" placeholder="Enter player names, separated by commas">
+        <button onclick="setupPlayers()">Set Players</button>
+        <div id="player-order" style="display: none;">
+            <h3>Player Order</h3>
+            <ul id="player-order-list"></ul>
+            <button onclick="startGame()">Start Game</button>
+        </div>
+    </div>
+    <div id="game-board" style="display: none;">
+        <h2>Game Board</h2>
+        <div id="current-player"></div>
+        <div id="pins"></div>
+        <div style="display: flex; justify-content: space-between; margin-top: 20px;">
+            <button id="undo-button" onclick="undoTurn()">Undo</button>
+            <button onclick="submitTurn()">Submit Turn</button>
+        </div>
+        <div id="player-scores"></div>
+        <div id="live-scoreboard">
+            <div class="scoreboard-header">
+                <span>Position</span>
+                <span>Player</span>
+                <span>Score</span>
+            </div>
+        </div>
+    </div>
+    <div id="winner-screen">
+        <div id="winner-message"></div>
+        <button id="download-results" onclick="downloadResults()">Download Results</button>
+        <button id="reset-game" onclick="resetGame()">Play Again</button>
+    </div>
+
+    <script>
+        let players = [];
+        let currentPlayerIndex = 0;
+        let gameOver = false;
+        let gameLog = [];
+        let turnHistory = [];
+        let previousRanking = [];
+
+        function setupPlayers() {
+            const playerNames = document.getElementById('player-names').value.split(',').map(name => name.trim());
+            if (playerNames.length < 2) {
+                alert('Please enter at least two player names.');
+                return;
+            }
+            players = playerNames.map(name => ({ name, score: 0, misses: 0, eliminated: false }));
+            displayPlayerOrder();
+        }
+
+        function displayPlayerOrder() {
+            const playerOrderList = document.getElementById('player-order-list');
+            playerOrderList.innerHTML = '';
+            players.forEach((player, index) => {
+                const li = document.createElement('li');
+                li.textContent = `${index + 1}. ${player.name}`;
+                if (index > 0) {
+                    const upButton = document.createElement('button');
+                    upButton.textContent = '↑';
+                    upButton.className = 'order-button';
+                    upButton.onclick = () => movePlayer(index, -1);
+                    li.appendChild(upButton);
+                }
+                if (index < players.length - 1) {
+                    const downButton = document.createElement('button');
+                    downButton.textContent = '↓';
+                    downButton.className = 'order-button';
+                    downButton.onclick = () => movePlayer(index, 1);
+                    li.appendChild(downButton);
+                }
+                playerOrderList.appendChild(li);
+            });
+            document.getElementById('player-order').style.display = 'block';
+        }
+
+        function movePlayer(index, direction) {
+            const newIndex = index + direction;
+            if (newIndex >= 0 && newIndex < players.length) {
+                [players[index], players[newIndex]] = [players[newIndex], players[index]];
+                displayPlayerOrder();
+            }
+        }
+
+        function startGame() {
+            currentPlayerIndex = 0;
+            gameOver = false;
+            gameLog = [];
+            turnHistory = [];
+            document.getElementById('game-setup').style.display = 'none';
+            document.getElementById('game-board').style.display = 'block';
+            document.getElementById('winner-screen').style.display = 'none';
+            updateGameBoard();
+        }
+
+        function updateGameBoard() {
+            const currentPlayer = players[currentPlayerIndex];
+            document.getElementById('current-player').textContent = `Current Player: ${currentPlayer.name}`;
+            
+            const pinsContainer = document.getElementById('pins');
+            pinsContainer.innerHTML = '';
+            for (let i = 1; i <= 12; i++) {
+                const pinButton = document.createElement('button');
+                pinButton.textContent = i;
+                pinButton.className = 'pin';
+                pinButton.onclick = () => togglePin(pinButton);
+                pinsContainer.appendChild(pinButton);
+            }
+
+            const playerScoresContainer = document.getElementById('player-scores');
+            playerScoresContainer.innerHTML = '';
+            players.forEach((player, index) => {
+                const playerScore = document.createElement('div');
+                playerScore.className = 'player-score';
+                playerScore.textContent = `${player.name}: ${player.score}`;
+                if (player.eliminated) {
+                    playerScore.classList.add('eliminated');
+                }
+                const misses = document.createElement('div');
+                misses.className = 'misses';
+                misses.textContent = 'X'.repeat(player.misses);
+                playerScore.appendChild(misses);
+                playerScoresContainer.appendChild(playerScore);
+            });
+
+            updateLiveScoreboard();
+
+            document.getElementById('undo-button').disabled = turnHistory.length === 0;
+        }
+
+        function updateLiveScoreboard() {
+            // Store previous ranking for comparison
+            previousRanking = players.map(player => player.name);
+
+            // Sort players by score in descending order
+            players.sort((a, b) => b.score - a.score);
+
+            const scoreboard = document.getElementById('live-scoreboard');
+            // Clear previous scoreboard entries but keep the header
+            scoreboard.innerHTML = scoreboard.querySelector('.scoreboard-header').outerHTML;
+
+            players.forEach((player, index) => {
+                const scoreboardEntry = document.createElement('div');
+                scoreboardEntry.className = 'scoreboard-entry';
+
+                const movementArrow = document.createElement('span');
+                const previousPosition = previousRanking.indexOf(player.name);
+                if (previousPosition > index) {
+                    movementArrow.textContent = '↑';
+                    movementArrow.className = 'arrow-up';
+                } else if (previousPosition < index) {
+                    movementArrow.textContent = '↓';
+                    movementArrow.className = 'arrow-down';
+                }
+
+                const playerName = document.createElement('span');
+                playerName.textContent = player.name;
+                if (player.eliminated) {
+                    playerName.classList.add('eliminated');
+                }
+
+                const playerScore = document.createElement('span');
+                playerScore.textContent = player.score;
+
+                scoreboardEntry.appendChild(movementArrow);
+                scoreboardEntry.appendChild(playerName);
+                scoreboardEntry.appendChild(playerScore);
+
+                scoreboard.appendChild(scoreboardEntry);
+            });
+        }
+
+        function togglePin(pinButton) {
+            pinButton.classList.toggle('selected');
+        }
+
+        function submitTurn() {
+            if (players[currentPlayerIndex].eliminated) {
+                alert('This player is eliminated and cannot take a turn.');
+                return;
+            }
+
+            const selectedPins = document.querySelectorAll('.pin.selected');
+            let score = 0;
+
+            if (selectedPins.length === 1) {
+                score = parseInt(selectedPins[0].textContent);
+            } else if (selectedPins.length > 1) {
+                alert('You can only select one pin.');
+                return;
+            }
+
+            const currentPlayer = players[currentPlayerIndex];
+            const previousScore = currentPlayer.score;
+            const previousMisses = currentPlayer.misses;
+
+            currentPlayer.score += score;
+
+            if (score === 0) {
+                currentPlayer.misses++;
+                if (currentPlayer.misses === 3) {
+                    currentPlayer.eliminated = true;
+                    currentPlayer.misses = 0;
+                    alert(`${currentPlayer.name} has been eliminated due to 3 consecutive misses!`);
+                }
+            } else {
+                currentPlayer.misses = 0;
+            }
+
+            if (currentPlayer.score > 50) {
+                currentPlayer.score = 25;
+            }
+
+            // Log the turn
+            gameLog.push(`${currentPlayer.name} scored ${score} points. New score: ${currentPlayer.score}`);
+
+            // Save turn history for undo
+            turnHistory.push({
+                playerIndex: currentPlayerIndex,
+                previousScore,
+                previousMisses,
+                eliminated: currentPlayer.eliminated
+            });
+
+            if (currentPlayer.score === 50) {
+                gameOver = true;
+                showWinnerScreen(currentPlayer.name);
+                return;
+            }
+
+            // Check if only one player remains
+            const remainingPlayers = players.filter(player => !player.eliminated);
+            if (remainingPlayers.length === 1) {
+                gameOver = true;
+                showWinnerScreen(remainingPlayers[0].name);
+                return;
+            }
+
+            // Move to the next player
+            currentPlayerIndex = (currentPlayerIndex + 1) % players.length;
+            updateGameBoard();
+        }
+
+        function undoTurn() {
+            if (turnHistory.length === 0) return;
+
+            const lastTurn = turnHistory.pop();
+            const player = players[lastTurn.playerIndex];
+            player.score = lastTurn.previousScore;
+            player.misses = lastTurn.previousMisses;
+            player.eliminated = lastTurn.eliminated;
+
+            currentPlayerIndex = lastTurn.playerIndex;
+            gameLog.pop(); // Remove the last log entry
+
+            updateGameBoard();
+        }
+
+        function showWinnerScreen(winnerName) {
+            document.getElementById('game-board').style.display = 'none';
+            document.getElementById('winner-screen').style.display = 'block';
+            document.getElementById('winner-message').innerHTML = `👑 ${winnerName} wins the game! 👑`;
+        }
+
+        function resetGame() {
+            document.getElementById('winner-screen').style.display = 'none';
+            document.getElementById('game-setup').style.display = 'block';
+            document.getElementById('player-order').style.display = 'none';
+            players = [];
+            currentPlayerIndex = 0;
+            gameOver = false;
+            gameLog = [];
+            turnHistory = [];
+            document.getElementById('player-names').value = '';
+        }
+
+        function downloadResults() {
+            const finalScores = players.map(player => `${player.name}: ${player.score}`).join('\n');
+            const results = `Game Log:\n${gameLog.join('\n')}\n\nFinal Scores:\n${finalScores}`;
+            const blob = new Blob([results], { type: 'text/plain' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'molkky_game_results.txt';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+    </script>
+</body>
+</html>
